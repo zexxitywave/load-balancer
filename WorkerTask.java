@@ -27,6 +27,13 @@ public class WorkerTask implements Runnable {
             // Get student ID sent by client (via Load Balancer).
             String sid = lbReader.readLine();
 
+            // Socket was closed before data arrived — nothing to do.
+            if (sid == null || sid.trim().isEmpty()) {
+                AppLogger.warn("WorkerTask received empty/null sid — skipping.");
+                loadBalancerSocket.close();
+                return;
+            }
+
             // Enhancement 3: Borrow a connection from the pool
             conn = pool.borrow();
 
@@ -55,6 +62,12 @@ public class WorkerTask implements Runnable {
         } finally {
             // Enhancement 3: Always return the connection to the pool
             if (conn != null) pool.returnConnection(conn);
+
+            // Receive a student ID from the Load Balancer.
+            //Query the database for that student's details.
+            //Convert the result into JSON.
+            //Send the JSON back to the Load Balancer.
+            //Return the database connection to the pool.
         }
     }
 }

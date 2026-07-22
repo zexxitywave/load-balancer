@@ -20,7 +20,9 @@ public class Worker {
             // Enhancement 4: Graceful shutdown — close pool and socket on Ctrl+C
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 AppLogger.info("Worker on port " + port + " shutting down...");
-                try { workerSocket.close(); } catch (IOException ignored) {}
+                try { 
+                    workerSocket.close(); 
+                    } catch (IOException ignored) {}
                 pool.closeAll();
                 AppLogger.info("Worker on port " + port + " shut down cleanly.");
             }, "worker-shutdown-" + port));
