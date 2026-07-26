@@ -49,9 +49,8 @@ public class WorkerTask implements Runnable {
             // Get student ID sent by client (via Load Balancer).
             String sid = lbReader.readLine();
 
-            // Socket was closed before data arrived — nothing to do.
+            // Socket was closed before data arrived — this is a health check ping, silently ignore.
             if (sid == null || sid.trim().isEmpty()) {
-                AppLogger.warn("WorkerTask received empty/null sid — skipping.");
                 loadBalancerSocket.close();
                 return;
             }
