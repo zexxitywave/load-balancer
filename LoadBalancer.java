@@ -7,6 +7,42 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/*
+ * WHAT THIS FILE DOES:
+ * --------------------
+ * This is the core of the system — the actual load balancer.
+ * It sits between the Client and the Workers, deciding which Worker handles each request.
+ *
+ * Startup:
+ *   - Reads worker_list.txt to discover all 5 workers (host, port, weight)
+ *   - Builds a weighted sequence for WRR (e.g., weights [3,2,2,1,1] → [0,0,0,1,1,2,2,3,4])
+ *   - Starts the health checker (pings workers every N seconds)
+ *   - Starts the live dashboard (refreshes terminal every 2s)
+ *   - Opens a ServerSocket on port 12345 (backlog: 200) to accept client connections
+ *
+ * Request Routing (main loop):
+ *   - Accepts incoming client connections
+ *   - Picks a worker using the chosen algorithm:
+ *       WRR (Weighted Round-Robin): cycles through the weighted sequence
+ *       LC  (Least-Connections): picks the worker with fewest active requests
+ *   - Skips workers that are DOWN
+ *   - Opens a socket to the selected worker
+ *   - Hands both sockets (client + worker) to LBRequestServer thread to handle
+ *
+ * Health Checker:
+ *   - Runs on a background thread every N seconds
+ *   - Pings each worker — marks DOWN if unreachable, UP if recovered
+ *   - Automatically restarts crashed workers using ProcessBuilder
+ *
+ * WorkerLoads (inner class):
+ *   - Tracks active connection count per worker (used by LC algorithm)
+ *   - Thread-safe using synchronized methods
+ *
+ * Graceful Shutdown:
+ *   - On Ctrl+C, stops accepting new requests and waits up to 10s for in-flight ones to finish
+ *
+ * Flow: Client connects → LB picks worker → opens socket to worker → hands off to LBRequestServer
+ */
 public class LoadBalancer {
 
     private static final ArrayList<WorkerInfo> workers = new ArrayList<>();
@@ -107,7 +143,8 @@ public class LoadBalancer {
             dashboard.start();
 
             int lbPort = AppConfig.getLBPort();
-            ServerSocket balancerSocket = new ServerSocket(lbPort);
+            // Increase backlog to 200 to handle high concurrent load (default is 50)
+            ServerSocket balancerSocket = new ServerSocket(lbPort, 200);
             AppLogger.info("LoadBalancer started on port " + lbPort + " using " + schedAlgo + " scheduling.");
 
             // Enhancement 4: Graceful shutdown hook

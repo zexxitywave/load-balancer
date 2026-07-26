@@ -8,6 +8,29 @@ import java.time.format.DateTimeFormatter;
  * Simple thread-safe logger.
  * Writes log entries to both the console and lb_requests.log file.
  * Format: [YYYY-MM-DD HH:mm:ss] [LEVEL] message
+ *
+ * WHAT THIS FILE DOES:
+ * --------------------
+ * Centralized logging for the entire system. Every component (LoadBalancer,
+ * Worker, LBRequestServer, etc.) uses AppLogger instead of System.out.println.
+ *
+ * How it works:
+ *   - Static initializer opens lb_requests.log in append mode at class load time
+ *   - write() is synchronized → only one thread can write at a time (thread-safe)
+ *   - Every log entry gets a timestamp + level prefix:
+ *       [2026-07-22 23:45:42] [INFO ] Request handled | worker=0 | sid=3 | duration=1ms
+ *       [2026-07-22 23:45:42] [WARN ] Worker 4 is DOWN. Attempting restart...
+ *       [2026-07-22 23:45:42] [ERROR] LoadBalancer error: Address already in use
+ *
+ * Log levels:
+ *   info()       → general operational events (request handled, worker started)
+ *   warn()       → non-fatal issues (worker down, stale connection)
+ *   error()      → failures and exceptions
+ *   logRequest() → specialized method for completed requests (worker, sid, duration)
+ *
+ * Output goes to:
+ *   1. Console (System.out) → visible in the terminal
+ *   2. lb_requests.log file → persists across runs (append mode)
  */
 public class AppLogger {
     private static final String LOG_FILE = "lb_requests.log";

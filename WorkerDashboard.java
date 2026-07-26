@@ -7,6 +7,28 @@ import java.util.concurrent.TimeUnit;
  * Enhancement 1: Live terminal dashboard.
  * Refreshes every 2 seconds and prints a table showing per-worker stats:
  *   Worker | Host:Port | Status | Weight | Active | Total | Avg ms | Uptime
+ *
+ * WHAT THIS FILE DOES:
+ * --------------------
+ * Displays a live refreshing table in the LoadBalancer terminal so you can
+ * monitor all 5 workers in real-time while the system is running.
+ *
+ * How it works:
+ *   - start() → schedules the print() method to run every 2 seconds on a background thread
+ *   - print() → reads the latest stats from each WorkerInfo object and prints a formatted table
+ *   - Uses ANSI escape code (\033[H\033[2J) to clear the terminal before each refresh
+ *     so it looks like the table is updating in place rather than scrolling
+ *   - stop() → called on LoadBalancer shutdown to stop the background scheduler
+ *
+ * What each column shows:
+ *   Worker   → index (0–4)
+ *   Host:Port → e.g. localhost:20001
+ *   Status   → UP (green) or DOWN (red) based on WorkerInfo.isAlive()
+ *   Weight   → WRR weight from worker_list.txt
+ *   Active   → current in-flight requests on this worker right now
+ *   Total    → total requests handled since startup
+ *   Avg ms   → average response time in milliseconds
+ *   Uptime   → how long since this WorkerInfo was created (HH:MM:SS)
  */
 public class WorkerDashboard {
 

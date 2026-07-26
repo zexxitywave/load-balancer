@@ -3,6 +3,31 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
+/*
+ * WHAT THIS FILE DOES:
+ * --------------------
+ * This is the middleman thread that runs inside the LoadBalancer for every single request.
+ * The LoadBalancer creates one LBRequestServer thread per request and hands it two sockets:
+ *   - clientSocket  → the connection from Client to LoadBalancer
+ *   - workerSocket  → the connection from LoadBalancer to the selected Worker
+ *
+ * What it does per request:
+ *   1. Reads the student ID sent by the Client
+ *   2. Records the request start on the worker's stats (for dashboard + LC tracking)
+ *   3. Forwards the student ID to the Worker
+ *   4. Waits for the Worker's JSON response
+ *   5. Forwards the JSON response back to the Client
+ *   6. Records the request duration on the worker's stats
+ *   7. Logs the completed request (worker index, student ID, duration in ms)
+ *   8. Closes both sockets
+ *   9. Decrements the worker's active load count (for LC scheduling)
+ *
+ * Why it's a separate thread:
+ *   - The LoadBalancer main loop can keep accepting new connections without waiting
+ *   - Each request is handled concurrently and independently
+ *
+ * Flow: Client → [LBRequestServer] → Worker → [LBRequestServer] → Client
+ */
 public class LBRequestServer implements Runnable {
     private final Socket clientSocket, workerSocket;
     private final WorkerLoads workerLoads;

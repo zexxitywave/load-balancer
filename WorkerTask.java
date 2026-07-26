@@ -7,6 +7,28 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import org.json.JSONObject;
 
+/*
+ * WHAT THIS FILE DOES:
+ * --------------------
+ * This is the actual request handler that runs inside each Worker.
+ * Worker spawns one WorkerTask thread per incoming request from the LoadBalancer.
+ *
+ * What it does per request:
+ *   1. Reads the student ID forwarded by the LoadBalancer via the socket
+ *   2. Borrows a PostgreSQL connection from the WorkerPool
+ *   3. Runs a parameterized SQL query:
+ *        SELECT name, dob, major, level, year FROM studentinfo WHERE sid=?
+ *   4. Builds a JSON object from the result (name, dob, major, level, year)
+ *   5. Sends the JSON string back to the LoadBalancer (which forwards it to the Client)
+ *   6. Always returns the DB connection back to the pool in the finally block
+ *
+ * Key design decisions:
+ *   - Uses PreparedStatement → prevents SQL injection
+ *   - Borrows/returns connection in try/finally → connection always returned even on error
+ *   - Empty/null student ID is handled gracefully (skips and closes socket)
+ *
+ * Flow: LoadBalancer sends sid → WorkerTask queries DB → builds JSON → sends back to LoadBalancer
+ */
 public class WorkerTask implements Runnable {
     private static final String[] columns = {"name", "dob", "major", "level", "year"};
     private final Socket loadBalancerSocket;

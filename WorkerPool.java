@@ -7,10 +7,26 @@ import java.util.List;
 /**
  * Enhancement 3: Simple DB connection pool for Worker processes.
  *
- * Maintains a fixed pool of reusable JDBC connections.
- * Threads borrow a connection, use it, then return it.
- * This avoids creating a new connection per request and prevents
- * race conditions that arise from sharing a single connection across threads.
+ * WHAT THIS FILE DOES:
+ * --------------------
+ * Manages a fixed pool of reusable PostgreSQL connections for each Worker.
+ * Instead of opening a new DB connection per request (which is expensive),
+ * WorkerPool pre-opens N connections at startup and reuses them across requests.
+ *
+ * How it works:
+ *   - At startup: opens `db.pool.size` connections (e.g., 20) to PostgreSQL
+ *   - borrow(): called by WorkerTask to get a free connection
+ *       → scans the pool for a free connection
+ *       → if all are in use, blocks (wait()) until one is returned
+ *       → auto-reconnects stale/closed connections before handing out
+ *   - returnConnection(): called by WorkerTask in finally block after each request
+ *       → marks the connection as free
+ *       → calls notifyAll() to wake up any threads waiting in borrow()
+ *   - closeAll(): called on Worker shutdown to cleanly close all DB connections
+ *
+ * Thread safety:
+ *   - borrow() and returnConnection() are both synchronized
+ *   - Uses wait()/notifyAll() to coordinate between threads without busy-waiting
  *
  * Note: Uses a lightweight built-in pool instead of HikariCP to keep
  * the project dependency-free. For production use, swap this out for HikariCP.

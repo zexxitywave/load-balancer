@@ -5,6 +5,25 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
+/*
+ * WHAT THIS FILE DOES:
+ * --------------------
+ * This is the request source — it simulates real users sending requests to the system.
+ *
+ * Client (main loop):
+ *   - Runs forever in a while(true) loop
+ *   - Every 500ms, opens a new TCP socket connection to the LoadBalancer on port 12345
+ *   - Spawns a new thread (RequestSender) to handle that request
+ *   - This way multiple requests can be in-flight at the same time
+ *
+ * RequestSender (one per request):
+ *   - Picks a random student ID between 1 and 7
+ *   - Sends the student ID to the LoadBalancer over the socket
+ *   - Waits for the JSON response that comes back via the LoadBalancer
+ *   - Parses the JSON and prints the student's full details to the console
+ *
+ * Flow: Client → TCP socket → LoadBalancer → Worker → PostgreSQL → back to Client
+ */
 public class Client {
 
     public static void main(String[] args) {

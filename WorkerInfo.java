@@ -4,6 +4,36 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+/*
+ * WHAT THIS FILE DOES:
+ * --------------------
+ * This is the data model for a single Worker. One WorkerInfo object exists per worker
+ * (5 total). It stores everything the LoadBalancer needs to know about a worker:
+ *
+ * Static info (set at startup from worker_list.txt):
+ *   - host       → e.g. "localhost"
+ *   - port       → e.g. 20001
+ *   - weight     → e.g. 3 (used by WRR — higher weight = more traffic)
+ *
+ * Health state:
+ *   - alive      → true if worker is UP, false if DOWN
+ *   - startTime  → when this WorkerInfo was created (used to calculate uptime)
+ *
+ * Live stats (updated in real-time by LBRequestServer):
+ *   - currentLoad    → number of requests being processed right now (AtomicInteger)
+ *   - totalHandled   → total requests handled since startup (AtomicInteger)
+ *   - totalDurationMs → sum of all request durations (AtomicLong)
+ *   - getAvgDurationMs() → totalDurationMs / totalHandled = average latency
+ *
+ * Health check:
+ *   - ping() → tries to open a TCP socket to this worker with a 2-second timeout
+ *             → returns true if reachable, false if DOWN
+ *             → called by the health checker thread every N seconds
+ *
+ * Thread safety:
+ *   - alive uses volatile (single read/write, no compound ops needed)
+ *   - stats use AtomicInteger/AtomicLong (lock-free thread-safe increments)
+ */
 public class WorkerInfo {
     private final String host;
     private final int port;
