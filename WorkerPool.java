@@ -52,6 +52,18 @@ public class WorkerPool {
         for (int i = 0; i < poolSize; i++) {
             pool.add(DriverManager.getConnection(url, user, password));
             inUse.add(false);
+            //This runs once when your application starts.
+            //If poolSize = 5, it creates:
+            //
+            //Connection 1
+            //Connection 2
+            //Connection 3
+            //Connection 4
+            //Connection 5
+            //
+            //and stores them in the pool.
+            //
+            //It does not check if they are up or reconnect them. It only creates them.
         }
         AppLogger.info("Connection pool initialized with " + poolSize + " connections.");
     }
@@ -66,13 +78,14 @@ public class WorkerPool {
                 if (!inUse.get(i)) {
                     // Reconnect if the connection went stale
                     try {
-                        if (pool.get(i).isClosed()) {
+                        if (pool.get(i).isClosed()) { // Before giving this connection to a client, check if it is closed. If it is, create a new connection.
                             pool.set(i, DriverManager.getConnection(url, user, password));
                         }
                     } catch (SQLException e) {
                         AppLogger.warn("Connection " + i + " is stale, reconnecting: " + e.getMessage());
                         try {
                             pool.set(i, DriverManager.getConnection(url, user, password));
+                            // The first reconnection failed. Try reconnecting one more time before giving up
                         } catch (SQLException ex) {
                             continue;
                         }
@@ -96,6 +109,10 @@ public class WorkerPool {
                 notifyAll(); // wake up any threads waiting in borrow()
                 return;
             }
+            // returnConnection(Connection conn)
+            //Returns a borrowed database connection back to the connection pool.
+            //Marks the connection as available (inUse = false).
+            //Calls notifyAll() to wake up any threads waiting for a free connection
         }
     }
 
@@ -103,6 +120,10 @@ public class WorkerPool {
         for (Connection c : pool) {
             try { c.close(); } catch (SQLException ignored) {}
         }
+        // closeAll()
+        //Loops through every connection in the pool.
+        //Closes each database connection.
+        //Used when the application is shutting down to free database resources.
         AppLogger.info("Connection pool closed.");
     }
 }

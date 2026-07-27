@@ -10,19 +10,19 @@
 DROP TABLE IF EXISTS studentinfo;
 
 CREATE TABLE studentinfo (
-    sid   INTEGER      PRIMARY KEY,
-    name  VARCHAR(60),
-    dob   VARCHAR(15),
-    major VARCHAR(50),
-    level VARCHAR(15),
-    year  VARCHAR(20)
+                             sid   INTEGER      PRIMARY KEY,
+                             name  VARCHAR(60),
+                             dob   VARCHAR(15),
+                             major VARCHAR(50),
+                             level VARCHAR(15),
+                             year  VARCHAR(20)
 );
 
 INSERT INTO studentinfo (sid, name, dob, major, level, year) VALUES
-    (1, 'Ayush Soni',       '5/19/97',  'Computer Science',                  'Graduate',     'First'),
-    (2, 'Daniel Stafford',  '2/10/97',  'Information Security',               'Graduate',     'Second'),
-    (3, 'Mark Straten',     '5/12/96',  'Interactive Games and Media',        'Undergraduate','Senior'),
-    (4, 'Varun Sharma',     '8/22/99',  'Information Science and Technology', 'Undergraduate','Freshman'),
-    (5, 'Alexander Luoi',   '7/18/98',  'Cyber Security',                    'Undergraduate','Sophomore'),
-    (6, 'Yu Kong',          '12/13/97', 'Computer Science',                  'Graduate',     'First'),
-    (7, 'Peter Drinklage',  '8/27/98',  'Software Engineering',              'Undergraduate','Senior');
+(1, 'Rahul Mehta',      '03/14/2000', 'Computer Engineering',       'Undergraduate', 'Junior'),
+(2, 'Priya Nair',       '11/09/1999', 'Data Science',               'Graduate',      'First'),
+(3, 'Arjun Verma',      '06/25/2001', 'Artificial Intelligence',    'Undergraduate', 'Sophomore'),
+(4, 'Sneha Kapoor',     '09/18/1998', 'Cyber Security',             'Graduate',      'Second'),
+(5, 'Rohan Gupta',      '01/30/2002', 'Software Engineering',       'Undergraduate', 'Freshman'),
+(6, 'Ananya Iyer',      '08/12/1999', 'Information Technology',     'Graduate',      'First'),
+(7, 'Karan Malhotra',   '04/07/2000', 'Computer Science',           'Undergraduate', 'Senior');

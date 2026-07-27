@@ -40,6 +40,7 @@ public class WorkerInfo {
     private final int weight;              // Enhancement 2: weighted round-robin weight
 
     // Health state
+    // Volatile ensures that when one thread updates alive to false, every other thread immediately sees the updated value the next time it reads alive.
     private volatile boolean alive = true;
     private final Instant startTime = Instant.now();  // Enhancement 1: uptime tracking
 
@@ -47,6 +48,7 @@ public class WorkerInfo {
     private final AtomicInteger totalHandled = new AtomicInteger(0);
     private final AtomicInteger currentLoad  = new AtomicInteger(0);
     private final AtomicLong    totalDurationMs = new AtomicLong(0);
+    // AtomicInteger is used when multiple threads need to safely update the same integer at the same time.
 
     WorkerInfo(String host, int port, int weight) {
         this.host   = host;
@@ -59,19 +61,29 @@ public class WorkerInfo {
     int    getPort()   { return port; }
     int    getWeight() { return weight; }
 
-    public boolean isAlive()                  { return alive; }
-    public void    setAlive(boolean alive)    { this.alive = alive; }
+    public boolean isAlive()                  {
+        return alive;
+    }
+    public void    setAlive(boolean alive)    {
+        this.alive = alive;
+    }
 
     // ---- stats ----
-    public void recordRequestStart()          { currentLoad.incrementAndGet(); }
+    public void recordRequestStart()          {
+        currentLoad.incrementAndGet();
+    }
     public void recordRequestEnd(long durationMs) {
         currentLoad.decrementAndGet();
         totalHandled.incrementAndGet();
         totalDurationMs.addAndGet(durationMs);
     }
 
-    public int  getTotalHandled()  { return totalHandled.get(); }
-    public int  getCurrentLoad()   { return currentLoad.get(); }
+    public int  getTotalHandled()  {
+        return totalHandled.get();
+    }
+    public int  getCurrentLoad()   {
+        return currentLoad.get();
+    }
     public long getAvgDurationMs() {
         int total = totalHandled.get();
         return total == 0 ? 0 : totalDurationMs.get() / total;
